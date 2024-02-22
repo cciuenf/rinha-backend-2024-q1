@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net/http"
+	"strconv"
 
 	. "github.com/cciuenf/rinha/internal"
 
@@ -21,10 +22,25 @@ func main() {
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
-	e.GET("/", handleBasic)
+	e.GET("/clientes/:id/transacoes", handleTransaction)
 	e.Logger.Fatal(e.Start(*port))
 }
 
-func handleBasic(c echo.Context) error {
-	return c.String(http.StatusOK, "Hello, world!")
+func handleTransaction(c echo.Context) error {
+	param := c.Param("id")
+
+	var attrs map[string]interface{}
+	err := (&echo.DefaultBinder{}).BindBody(c, &attrs)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, nil)
+	}
+
+	customerID, err := strconv.Atoi(param)
+	if err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, nil)
+	}
+
+	t, err := MakeTransaction(customerID, attrs)
+
+	return nil
 }
