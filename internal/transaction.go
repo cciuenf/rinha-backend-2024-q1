@@ -62,6 +62,6 @@ func processTransaction(client *Client, trx Transaction) error {
 	return nil
 }
 
-func validTransaction(cilent Client, value int) bool {
-	return true
+func validTransaction(client Client, value int) bool {
+	return client.Balance-value < -client.MaxLimit
 }

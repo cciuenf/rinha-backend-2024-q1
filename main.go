@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -17,30 +19,49 @@ func main() {
 	e := echo.New()
 
 	// middlewares
-	e.Use(middleware.RequestID())
+	// e.Use(middleware.RequestID())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "method=${method}, uri=${uri}, status=${status}\n",
 	}))
 
-	e.GET("/clientes/:id/transacoes", handleTransaction)
+	e.POST("/clientes/:id/transacoes", handleTransaction)
 	e.Logger.Fatal(e.Start(*port))
 }
 
+type TransactionResponse struct {
+	Saldo int `json:"saldo"`
+	Limite int `json:"limite"`
+}
+
 func handleTransaction(c echo.Context) error {
+	fmt.Println("Ola")
 	param := c.Param("id")
 
 	var attrs map[string]interface{}
 	err := (&echo.DefaultBinder{}).BindBody(c, &attrs)
+	fmt.Println("Ola2")
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, nil)
 	}
 
 	customerID, err := strconv.Atoi(param)
+	fmt.Println("Ola3")
 	if err != nil {
 		return c.JSON(http.StatusUnprocessableEntity, nil)
 	}
 
-	t, err := MakeTransaction(customerID, attrs)
+	var response TransactionResponse
+	cc, err := MakeTransaction(customerID, attrs)
+	response.Saldo = cc.Balance
+	response.Limite = cc.MaxLimit
 
-	return nil
+	body, err := json.Marshal(response)
+	fmt.Println("Ola4")
+	if err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, nil)
+	}
+
+	fmt.Println("Ola5")
+	fmt.Println(string(body))
+	return c.JSON(http.StatusOK, string(body))
 }
