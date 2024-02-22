@@ -17,7 +17,7 @@
           mkShell {
             name = "rinha-go";
             packages = with pkgs;
-              [go_1_22 nginx postgresql]
+              [go_1_22 nginx postgresql k6]
               ++ lib.optional stdenv.isLinux [inotify-tools]
               ++ lib.optional stdenv.isDarwin [
                 darwin.apple_sdk.frameworks.CoreServices
