@@ -28,40 +28,33 @@ func main() {
 	e.Logger.Fatal(e.Start(*port))
 }
 
-type TransactionResponse struct {
-	Saldo int `json:"saldo"`
-	Limite int `json:"limite"`
-}
-
 func handleTransaction(c echo.Context) error {
-	fmt.Println("Ola")
 	param := c.Param("id")
 
-	var attrs map[string]interface{}
-	err := (&echo.DefaultBinder{}).BindBody(c, &attrs)
-	fmt.Println("Ola2")
+	var req TransactionRequest
+	err := (&echo.DefaultBinder{}).BindBody(c, &req)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, nil)
+		return c.JSON(http.StatusInternalServerError, "bind req")
 	}
 
 	customerID, err := strconv.Atoi(param)
-	fmt.Println("Ola3")
 	if err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, nil)
+		return c.JSON(http.StatusUnprocessableEntity, "atoi")
 	}
 
 	var response TransactionResponse
-	cc, err := MakeTransaction(customerID, attrs)
+	cc, err := MakeTransaction(customerID, req)
+	if err != nil {
+		return c.JSON(http.StatusUnprocessableEntity, err.Error())
+	}
 	response.Saldo = cc.Balance
 	response.Limite = cc.MaxLimit
 
 	body, err := json.Marshal(response)
-	fmt.Println("Ola4")
 	if err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, nil)
+		return c.JSON(http.StatusUnprocessableEntity, "marshal response")
 	}
 
-	fmt.Println("Ola5")
 	fmt.Println(string(body))
-	return c.JSON(http.StatusOK, string(body))
+	return c.JSON(http.StatusOK, body)
 }

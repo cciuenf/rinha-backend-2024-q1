@@ -1,11 +1,12 @@
 package internal
 
 import (
+	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
-	. "github.com/zoedsoupe/exo/changeset"
 )
 
 type Transaction struct {
@@ -17,9 +18,20 @@ type Transaction struct {
 	CreatedAt   time.Time
 }
 
+type TransactionRequest struct {
+	Description string `json:"descricao"`
+	Value       int    `json:"valor"`
+	Type        string `json:"tipo"`
+}
+
+type TransactionResponse struct {
+	Saldo  int `json:"saldo"`
+	Limite int `json:"limite"`
+}
+
 var transactions []Transaction
 
-var client = [5]Client{
+var clients = [5]Client{
 	{1, "A", 1000 * 100, 0},
 	{2, "B", 800 * 100, 0},
 	{3, "C", 10000 * 100, 0},
@@ -27,25 +39,46 @@ var client = [5]Client{
 	{5, "E", 5000 * 100, 0},
 }
 
-func MakeTransaction(ID int, Value map[string]interface{}) (Client, error) {
-	var t Transaction
+func MakeTransaction(ID int, req TransactionRequest) (Client, error) {
 	var client Client
 	if ID < 1 || ID > 5 {
-		return client, echo.NewHTTPError(http.StatusNotFound, nil)
+		return client, echo.NewHTTPError(http.StatusNotFound, "not found")
 	}
+	client = clients[ID]
 
-	c := Cast[Transaction](Value).
-		ValidateChange("Type", InclusionValidator{Allowed: []interface{}{"c", "d"}}).
-		ValidateChange("Description", LengthValidator{Min: 1, Max: 10})
-
-	t, err := ApplyNew[Transaction](c)
+	t, err := transactionRequestToTransaction(ID, req)
 	if err != nil {
+		fmt.Println(err.Error())
 		return client, echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
 	transactions = append(transactions, t)
+	if err := processTransaction(&client, t); err != nil {
+		return client, echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
+	}
 
 	return client, nil
+}
+
+func transactionRequestToTransaction(ID int, req TransactionRequest) (Transaction, error) {
+	var t Transaction
+
+	if len(req.Description) > 10 {
+		return t, echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid desc")
+	}
+
+	if (req.Type != "c") && (req.Type != "d") {
+		return t, echo.NewHTTPError(http.StatusUnprocessableEntity, "invalid type")
+	}
+
+	t.ID = rand.Int()
+	t.CustomerID = ID
+	t.CreatedAt = time.Now()
+	t.Type = req.Type
+	t.Description = req.Description
+	t.Value = req.Value
+
+	return t, nil
 }
 
 func processTransaction(client *Client, trx Transaction) error {
@@ -54,14 +87,14 @@ func processTransaction(client *Client, trx Transaction) error {
 		return nil
 	}
 
-	if !validTransaction(*client, trx.Value) {
-		return echo.NewHTTPError(http.StatusUnprocessableEntity, nil)
+	if invalidTransaction(*client, trx.Value) {
+		return echo.NewHTTPError(http.StatusUnprocessableEntity, "can't process trx")
 	}
 
 	client.Balance -= trx.Value
 	return nil
 }
 
-func validTransaction(client Client, value int) bool {
-	return client.Balance-value < -client.MaxLimit
+func invalidTransaction(client Client, value int) bool {
+	return client.Balance-value < (-1 * client.MaxLimit)
 }
