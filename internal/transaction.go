@@ -44,7 +44,7 @@ func MakeTransaction(ID int, req TransactionRequest) (Client, error) {
 	if ID < 1 || ID > 5 {
 		return client, echo.NewHTTPError(http.StatusNotFound, "not found")
 	}
-	client = clients[ID]
+	client = clients[ID - 1]
 
 	t, err := transactionRequestToTransaction(ID, req)
 	if err != nil {
@@ -57,6 +57,7 @@ func MakeTransaction(ID int, req TransactionRequest) (Client, error) {
 		return client, echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 	}
 
+	clients[ID - 1] = client
 	return client, nil
 }
 

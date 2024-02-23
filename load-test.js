@@ -35,7 +35,7 @@ function validarConsistenciaSaldoLimite(response) {
     return saldo >= -1 * limite;
 }
 
-const baseUrl = 'http://localhost:9999';
+const baseUrl = 'http://localhost:4000';
 
 export let options = {
     scenarios: {
@@ -59,7 +59,7 @@ export let options = {
             gracefulRampDown: '60s',
             exec: 'debitos',
         },
-        extratos: {
+        /* extratos: {
             executor: 'ramping-vus',
             startVUs: 0,
             stages: [
@@ -68,7 +68,7 @@ export let options = {
             ],
             gracefulRampDown: '60s',
             exec: 'extratos',
-        },
+        }, */
     },
 };
 

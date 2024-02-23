@@ -1,9 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -50,11 +48,5 @@ func handleTransaction(c echo.Context) error {
 	response.Saldo = cc.Balance
 	response.Limite = cc.MaxLimit
 
-	body, err := json.Marshal(response)
-	if err != nil {
-		return c.JSON(http.StatusUnprocessableEntity, "marshal response")
-	}
-
-	fmt.Println(string(body))
-	return c.JSON(http.StatusOK, body)
+	return c.JSON(http.StatusOK, response)
 }
